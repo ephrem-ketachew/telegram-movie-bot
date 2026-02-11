@@ -1,5 +1,7 @@
 import os
 from dotenv import load_dotenv
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 import random
@@ -98,8 +100,23 @@ async def unknown_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = "Hmm, I don't understand normal chat yet! 🤔\nPlease use my commands. Type /help to see what I can do."
     await update.message.reply_text(response)
 
+def run_dummy_server():
+    port = int(os.environ.get("PORT", 10000))
+    server_address = ('', port)
+    
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Epha's Bot is alive and polling!")
+            
+    httpd = HTTPServer(server_address, Handler)
+    httpd.serve_forever()
+
 if __name__ == '__main__':
     print("Bot is waking up securely! Loading keys from .env...")
+    
+    threading.Thread(target=run_dummy_server, daemon=True).start()
     
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     
